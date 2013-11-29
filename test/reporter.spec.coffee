@@ -108,7 +108,8 @@ describe 'reporter', ->
 
     beforeEach ->
       rootConfig =
-        coverageReporter: dir: 'path/to/coverage/'
+        coverageReporter: dir: 'path/to/coverage/',
+        writeJsonFile: true
       emitter = new events.EventEmitter
       reporter = new m.CoverageReporter rootConfig, emitter, mockHelper, mockLogger
       browsers = new Collection emitter
@@ -138,7 +139,7 @@ describe 'reporter', ->
       reporter.onBrowserComplete fakeChrome, undefined
       expect(mockAdd).not.to.have.been.called
 
-    it 'should store coverage json', ->
+    it 'should store coverage json if config.writeJsonFile is set', ->
       result =
         coverage:
           aaa: 1
@@ -152,6 +153,22 @@ describe 'reporter', ->
       expect(mockFs.writeFile).to.have.been.calledWith
       args2 = mockFs.writeFile.lastCall.args
       # expect(args2[1]).to.deep.equal JSON.stringify(result.coverage)
+
+    it 'should not store coverage json if config.writeJsonFile is not set', ->
+      # Set up config this test case
+      rootConfig =
+        coverageReporter: dir: 'path/to/coverage/'
+      reporter = new m.CoverageReporter rootConfig, emitter, mockHelper, mockLogger
+      reporter.onRunStart()
+
+      result =
+        coverage:
+          aaa: 1
+          bbb: 2
+      reporter.onBrowserComplete fakeChrome, result
+      expect(mockAdd).to.have.been.calledWith result.coverage
+      expect(mockMkdir).not.to.have.been.called
+      expect(mockFs.writeFile).not.to.have.been.calledWith
 
     it 'should make reports', ->
       reporter.onRunComplete browsers
